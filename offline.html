@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hors ligne - Météo Marine</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        button {
+            background: white;
+            color: #1a2980;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .features {
+            margin-top: 40px;
+            text-align: left;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .features li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            <i class="fas fa-wifi-slash"></i>
+        </div>
+        
+        <h1>Vous êtes hors ligne</h1>
+        
+        <p>
+            La connexion Internet est actuellement indisponible.
+            Les données en cache seront affichées.
+        </p>
+        
+        <div class="buttons">
+            <button onclick="window.location.reload()">
+                <i class="fas fa-sync-alt"></i> Réessayer
+            </button>
+            <button onclick="history.back()">
+                <i class="fas fa-arrow-left"></i> Retour
+            </button>
+        </div>
+        
+        <div class="features">
+            <h3>Fonctionnalités disponibles hors ligne:</h3>
+            <ul>
+                <li><i class="fas fa-cloud-sun"></i> Dernières données météo</li>
+                <li><i class="fas fa-map"></i> Zones côtières</li>
+                <li><i class="fas fa-cog"></i> Paramètres</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        setInterval(() => {
+            if (navigator.onLine) {
+                window.location.href = '/';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
