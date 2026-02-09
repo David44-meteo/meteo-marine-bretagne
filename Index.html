@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Météo Marine Bretagne - PWA</title>
+    <meta name="description" content="Application de météo marine pour la navigation en Bretagne">
+    <meta name="theme-color" content="#1a2980">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192x192.png">
+    
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => console.log('Service Worker enregistré'))
+                    .catch(error => console.log('Erreur Service Worker:', error));
+            });
+        }
+        
+        // Détection PWA installée
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                     window.navigator.standalone === true;
+        if (isPWA) document.documentElement.classList.add('pwa-installed');
+    </script>
+</head>
+<body>
+    <!-- Install Prompt -->
+    <div id="installPrompt" class="install-prompt">
+        <div class="install-content">
+            <i class="fas fa-download"></i>
+            <h3>Installer l'application</h3>
+            <p>Installez Météo Marine Bretagne pour une meilleure expérience</p>
+            <div class="install-buttons">
+                <button id="installButton" class="btn-install">Installer</button>
+                <button id="closeInstall" class="btn-cancel">Plus tard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <button class="menu-btn" onclick="toggleMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1><i class="fas fa-water"></i> Météo Marine</h1>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="refreshData()" title="Actualiser">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="icon-btn" onclick="openSettings()" title="Paramètres">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Side Menu -->
+        <nav id="sideMenu" class="side-menu">
+            <div class="menu-header">
+                <h3><i class="fas fa-map"></i> Zones</h3>
+                <button onclick="toggleMenu()" class="close-menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="menu-items">
+                <button class="menu-item active" onclick="selectLocation('nord')">
+                    <i class="fas fa-water"></i> Côte Nord
+                </button>
+                <button class="menu-item" onclick="selectLocation('sud')">
+                    <i class="fas fa-sun"></i> Côte Sud
+                </button>
+                <button class="menu-item" onclick="selectLocation('morlaix')">
+                    <i class="fas fa-anchor"></i> Baie de Morlaix
+                </button>
+                <button class="menu-item" onclick="selectLocation('brest')">
+                    <i class="fas fa-ship"></i> Rade de Brest
+                </button>
+                <button class="menu-item" onclick="selectLocation('quiberon')">
+                    <i class="fas fa-umbrella-beach"></i> Quiberon
+                </button>
+                <button class="menu-item" onclick="selectLocation('finistere')">
+                    <i class="fas fa-mountain"></i> Finistère
+                </button>
+            </div>
+            <div class="menu-footer">
+                <button class="menu-item" onclick="showAbout()">
+                    <i class="fas fa-info-circle"></i> À propos
+                </button>
+                <button class="menu-item" onclick="showInstallPrompt()">
+                    <i class="fas fa-download"></i> Installer l'app
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- API Info -->
+            <div class="api-info" id="apiInfo">
+                <p><i class="fas fa-key"></i> Configurez votre clé API Stormglass</p>
+                <button onclick="openSettings()" class="config-btn">
+                    <i class="fas fa-cog"></i> Configurer
+                </button>
+            </div>
+
+            <!-- Current Weather -->
+            <div class="weather-card">
+                <div class="location-header">
+                    <h2 id="locationName">Côte Nord Bretagne</h2>
+                    <div class="status">
+                        <span id="connectionStatus" class="online">
+                            <i class="fas fa-circle"></i> En ligne
+                        </span>
+                        <span id="lastUpdate" class="update-time">--:--</span>
+                    </div>
+                </div>
+
+                <div class="weather-main">
+                    <div class="temp-section">
+                        <div class="current-temp" id="currentTemp">--°C</div>
+                        <div class="conditions" id="conditions">Chargement...</div>
+                        <div class="sea-temp" id="seaTemp">Mer: --°C</div>
+                    </div>
+                    <div class="weather-icon" id="weatherIcon">
+                        <i class="fas fa-cloud-sun"></i>
+                    </div>
+                </div>
+
+                <div class="weather-details">
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <i class="fas fa-wind"></i>
+                        </div>
+                        <div class="detail-info">
+                            <div class="detail-label">Vent</div>
+                            <div class="detail-value" id="windValue">-- nœuds</div>
+                        </div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <i class="fas fa-water"></i>
+                        </div>
+                        <div class="detail-info">
+                            <div class="detail-label">Vagues</div>
+                            <div class="detail-value" id="waveValue">-- m</div>
+                        </div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="detail-info">
+                            <div class="detail-label">Pression</div>
+                            <div class="detail-value" id="pressureValue">-- hPa</div>
+                        </div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="detail-info">
+                            <div class="detail-label">Visibilité</div>
+                            <div class="detail-value" id="visibilityValue">-- km</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning -->
+            <div class="warning-card" id="warningCard">
+                <div class="warning-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="warning-content">
+                    <div class="warning-title" id="warningTitle">Chargement</div>
+                    <div class="warning-text" id="warningText">Connexion à l'API en cours...</div>
+                </div>
+            </div>
+
+            <!-- Forecast -->
+            <div class="section-title">
+                <h3><i class="fas fa-chart-line"></i> Prévisions 24h</h3>
+            </div>
+            
+            <div class="forecast-container" id="forecastContainer">
+                <div class="forecast-loading">
+                    <div class="spinner"></div>
+                    <p>Chargement des prévisions...</p>
+                </div>
+            </div>
+
+            <!-- Map -->
+            <div class="section-title">
+                <h3><i class="fas fa-map-marked-alt"></i> Carte Bretagne</h3>
+            </div>
+            
+            <div class="map-container">
+                <div class="map-placeholder">
+                    <i class="fas fa-map fa-3x"></i>
+                    <p>Carte interactive des conditions</p>
+                    <div class="map-legend">
+                        <span class="legend-item"><i class="fas fa-circle" style="color:#4CAF50"></i> Calme</span>
+                        <span class="legend-item"><i class="fas fa-circle" style="color:#FFC107"></i> Modéré</span>
+                        <span class="legend-item"><i class="fas fa-circle" style="color:#F44336"></i> Agité</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Nav -->
+        <div class="bottom-nav">
+            <button class="nav-btn active" onclick="switchTab('weather')">
+                <i class="fas fa-cloud-sun"></i>
+                <span>Météo</span>
+            </button>
+            <button class="nav-btn" onclick="switchTab('forecast')">
+                <i class="fas fa-chart-line"></i>
+                <span>Prévisions</span>
+            </button>
+            <button class="nav-btn" onclick="switchTab('alerts')">
+                <i class="fas fa-bell"></i>
+                <span>Alertes</span>
+            </button>
+            <button class="nav-btn" onclick="switchTab('info')">
+                <i class="fas fa-info-circle"></i>
+                <span>Infos</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cog"></i> Paramètres</h3>
+                <button onclick="closeModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <h4><i class="fas fa-key"></i> API Stormglass</h4>
+                    <div class="input-group">
+                        <input type="password" id="apiKeyInput" placeholder="Votre clé API">
+                        <button onclick="saveApiKey()" class="btn-save">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </div>
+                    <p class="help-text">
+                        <a href="https://stormglass.io" target="_blank">
+                            <i class="fas fa-external-link-alt"></i> Obtenir une clé gratuite
+                        </a>
+                    </p>
+                </div>
+                
+                <div class="setting-group">
+                    <h4><i class="fas fa-sliders-h"></i> Préférences</h4>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="darkModeToggle">
+                            Mode sombre
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="notificationsToggle">
+                            Notifications
+                        </label>
+                    </div>
+                    <select id="unitsSelect" class="select-box">
+                        <option value="metric">Métrique (°C, km/h, m)</option>
+                        <option value="imperial">Impérial (°F, mph, ft)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <h4><i class="fas fa-database"></i> Données</h4>
+                    <button onclick="clearCache()" class="btn-action">
+                        <i class="fas fa-trash"></i> Vider le cache
+                    </button>
+                    <button onclick="exportData()" class="btn-action">
+                        <i class="fas fa-download"></i> Exporter données
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> À propos</h3>
+                <button onclick="closeModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-header">
+                    <i class="fas fa-water fa-3x"></i>
+                    <h2>Météo Marine Bretagne</h2>
+                </div>
+                <div class="about-info">
+                    <p><strong>Version:</strong> 1.0.0 PWA</p>
+                    <p><strong>Dernière mise à jour:</strong> <span id="versionDate">2024</span></p>
+                    <p><strong>Source données:</strong> Stormglass API</p>
+                </div>
+                <div class="about-features">
+                    <h4><i class="fas fa-star"></i> Fonctionnalités</h4>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Données temps réel</li>
+                        <li><i class="fas fa-check"></i> 6 zones côtières</li>
+                        <li><i class="fas fa-check"></i> Prévisions 24h</li>
+                        <li><i class="fas fa-check"></i> Mode hors ligne</li>
+                        <li><i class="fas fa-check"></i> Installation PWA</li>
+                    </ul>
+                </div>
+                <div class="about-footer">
+                    <p>Développé avec ❤️ pour les marins bretons</p>
+                    <p><a href="https://github.com/votre-utilisateur/meteo-marine-bretagne" target="_blank">
+                        <i class="fab fa-github"></i> Code source
+                    </a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" class="offline-indicator">
+        <i class="fas fa-wifi-slash"></i>
+        <span>Mode hors ligne - Données en cache</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
