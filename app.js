@@ -60,6 +60,9 @@ let state = {
 // ============================================
 // 3. INITIALISATION
 // ============================================
+// FORCER LE MODE DÉMO AU CHARGEMENT
+localStorage.removeItem('stormglass_api_key');
+CONFIG.apiKey = '';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Initialisation de l\'application...');
     
