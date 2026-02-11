@@ -201,26 +201,190 @@
                     <p>Chargement des prévisions...</p>
                 </div>
             </div>
+<!-- ============================================ -->
+<!-- CARTE INTERACTIVE - VERSION GRANDE ET CLAIRE -->
+<!-- ============================================ -->
 
-            <!-- Map -->
-            <div class="section-title">
-                <h3><i class="fas fa-map-marked-alt"></i> Carte Bretagne</h3>
+<div class="section-title">
+    <h3><i class="fas fa-map-marked-alt"></i> Carte des conditions marines</h3>
+    <span class="badge">Bretagne - 6 zones</span>
+</div>
+
+<div class="map-full-container">
+    
+    <!-- Légende flottante -->
+    <div class="map-legend-card">
+        <h4><i class="fas fa-info-circle"></i> Conditions actuelles</h4>
+        <div class="legend-items">
+            <div class="legend-item">
+                <span class="dot" style="background: #4CAF50;"></span>
+                <span>Calme (vent < 10 nd)</span>
             </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #FFC107;"></span>
+                <span>Modéré (vent 10-20 nd)</span>
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #FF9800;"></span>
+                <span>Agité (vent 20-30 nd)</span>
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #F44336;"></span>
+                <span>Danger (vent > 30 nd)</span>
+            </div>
+        </div>
+        <div class="tide-info">
+            <i class="fas fa-clock"></i> 
+            <span id="mapUpdateTime">Mise à jour: --:--</span>
+        </div>
+    </div>
+    
+    <!-- Carte SVG interactive -->
+    <div class="map-svg-container">
+        <svg viewBox="0 0 800 600" class="bretagne-map">
             
-            <div class="map-container">
-                <div class="map-placeholder">
-                    <i class="fas fa-map fa-3x"></i>
-                    <p>Carte interactive des conditions</p>
-                    <div class="map-legend">
-                        <span class="legend-item"><i class="fas fa-circle" style="color:#4CAF50"></i> Calme</span>
-                        <span class="legend-item"><i class="fas fa-circle" style="color:#FFC107"></i> Modéré</span>
-                        <span class="legend-item"><i class="fas fa-circle" style="color:#F44336"></i> Agité</span>
-                    </div>
-                </div>
+            <!-- Fond mer -->
+            <rect x="0" y="0" width="800" height="600" fill="#e6f3ff"/>
+            
+            <!-- Contour Bretagne simplifié -->
+            <path d="M200,300 L300,200 L450,150 L600,200 L650,250 L600,350 L500,400 L350,450 L200,400 L150,350 L200,300" 
+                  fill="#8BC34A" stroke="#2E7D32" stroke-width="3"/>
+            
+            <!-- Villes principales -->
+            <circle cx="250" cy="320" r="6" fill="#FF5722" stroke="white" stroke-width="2"/>
+            <text x="230" y="300" class="city-label">Brest</text>
+            
+            <circle cx="380" cy="250" r="6" fill="#FF5722" stroke="white" stroke-width="2"/>
+            <text x="360" y="230" class="city-label">Morlaix</text>
+            
+            <circle cx="500" cy="280" r="6" fill="#FF5722" stroke="white" stroke-width="2"/>
+            <text x="480" y="260" class="city-label">St-Malo</text>
+            
+            <circle cx="320" cy="400" r="6" fill="#FF5722" stroke="white" stroke-width="2"/>
+            <text x="300" y="380" class="city-label">Quimper</text>
+            
+            <circle cx="550" cy="350" r="6" fill="#FF5722" stroke="white" stroke-width="2"/>
+            <text x="530" y="330" class="city-label">Vannes</text>
+            
+            <circle cx="600" cy="400" r="6" fill="#FF5722" stroke="white" stroke-width="2"/>
+            <text x="580" y="380" class="city-label">Nantes</text>
+            
+            <!-- Zones maritimes interactives -->
+            <!-- Côte Nord -->
+            <g class="marine-zone" data-location="nord" onclick="selectLocationFromMap('nord')">
+                <ellipse cx="380" cy="180" rx="70" ry="40" fill="url(#gradNord)" opacity="0.7" class="zone-hover"/>
+                <text x="380" y="170" class="zone-label" text-anchor="middle">Côte Nord</text>
+                <text x="380" y="190" class="zone-temp" id="mapTempNord" text-anchor="middle">--°C</text>
+                <circle cx="380" cy="180" r="8" fill="#1a2980" stroke="white" stroke-width="2" id="dotNord"/>
+            </g>
+            
+            <!-- Côte Sud -->
+            <g class="marine-zone" data-location="sud" onclick="selectLocationFromMap('sud')">
+                <ellipse cx="550" cy="450" rx="70" ry="40" fill="url(#gradSud)" opacity="0.7" class="zone-hover"/>
+                <text x="550" y="440" class="zone-label" text-anchor="middle">Côte Sud</text>
+                <text x="550" y="460" class="zone-temp" id="mapTempSud" text-anchor="middle">--°C</text>
+                <circle cx="550" cy="450" r="8" fill="#1a2980" stroke="white" stroke-width="2" id="dotSud"/>
+            </g>
+            
+            <!-- Baie de Morlaix -->
+            <g class="marine-zone" data-location="morlaix" onclick="selectLocationFromMap('morlaix')">
+                <ellipse cx="380" cy="220" rx="50" ry="30" fill="url(#gradMorlaix)" opacity="0.7" class="zone-hover"/>
+                <text x="380" y="210" class="zone-label" text-anchor="middle">Morlaix</text>
+                <text x="380" y="230" class="zone-temp" id="mapTempMorlaix" text-anchor="middle">--°C</text>
+                <circle cx="380" cy="220" r="6" fill="#1a2980" stroke="white" stroke-width="2" id="dotMorlaix"/>
+            </g>
+            
+            <!-- Rade de Brest -->
+            <g class="marine-zone" data-location="brest" onclick="selectLocationFromMap('brest')">
+                <ellipse cx="250" cy="350" rx="50" ry="30" fill="url(#gradBrest)" opacity="0.7" class="zone-hover"/>
+                <text x="250" y="340" class="zone-label" text-anchor="middle">Brest</text>
+                <text x="250" y="360" class="zone-temp" id="mapTempBrest" text-anchor="middle">--°C</text>
+                <circle cx="250" cy="350" r="6" fill="#1a2980" stroke="white" stroke-width="2" id="dotBrest"/>
+            </g>
+            
+            <!-- Quiberon -->
+            <g class="marine-zone" data-location="quiberon" onclick="selectLocationFromMap('quiberon')">
+                <ellipse cx="520" cy="400" rx="50" ry="30" fill="url(#gradQuiberon)" opacity="0.7" class="zone-hover"/>
+                <text x="520" y="390" class="zone-label" text-anchor="middle">Quiberon</text>
+                <text x="520" y="410" class="zone-temp" id="mapTempQuiberon" text-anchor="middle">--°C</text>
+                <circle cx="520" cy="400" r="6" fill="#1a2980" stroke="white" stroke-width="2" id="dotQuiberon"/>
+            </g>
+            
+            <!-- Finistère -->
+            <g class="marine-zone" data-location="finistere" onclick="selectLocationFromMap('finistere')">
+                <ellipse cx="180" cy="300" rx="60" ry="35" fill="url(#gradFinistere)" opacity="0.7" class="zone-hover"/>
+                <text x="180" y="290" class="zone-label" text-anchor="middle">Finistère</text>
+                <text x="180" y="310" class="zone-temp" id="mapTempFinistere" text-anchor="middle">--°C</text>
+                <circle cx="180" cy="300" r="6" fill="#1a2980" stroke="white" stroke-width="2" id="dotFinistere"/>
+            </g>
+            
+            <!-- Gradients -->
+            <defs>
+                <linearGradient id="gradNord" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#2196F3;stop-opacity:0.7" />
+                    <stop offset="100%" style="stop-color:#4CAF50;stop-opacity:0.7" />
+                </linearGradient>
+                <linearGradient id="gradSud" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.7" />
+                    <stop offset="100%" style="stop-color:#FFC107;stop-opacity:0.7" />
+                </linearGradient>
+                <linearGradient id="gradMorlaix" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#FF9800;stop-opacity:0.7" />
+                    <stop offset="100%" style="stop-color:#F44336;stop-opacity:0.7" />
+                </linearGradient>
+                <linearGradient id="gradBrest" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#2196F3;stop-opacity:0.7" />
+                    <stop offset="100%" style="stop-color:#FF9800;stop-opacity:0.7" />
+                </linearGradient>
+                <linearGradient id="gradQuiberon" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.7" />
+                    <stop offset="100%" style="stop-color:#2196F3;stop-opacity:0.7" />
+                </linearGradient>
+                <linearGradient id="gradFinistere" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#F44336;stop-opacity:0.7" />
+                    <stop offset="100%" style="stop-color:#FF9800;stop-opacity:0.7" />
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+    
+    <!-- Zone sélectionnée affichage -->
+    <div class="selected-zone-card" id="selectedZoneCard">
+        <div class="selected-zone-header">
+            <i class="fas fa-location-dot"></i>
+            <h4 id="selectedZoneName">Côte Nord Bretagne</h4>
+        </div>
+        <div class="selected-zone-weather">
+            <div class="selected-temp">
+                <span id="selectedZoneTemp">15°C</span>
+                <small>air</small>
             </div>
-        </main>
-
-        <!-- Bottom Nav -->
+            <div class="selected-sea">
+                <span id="selectedZoneSea">14°C</span>
+                <small>mer</small>
+            </div>
+            <div class="selected-wind">
+                <i class="fas fa-wind"></i>
+                <span id="selectedZoneWind">12 nd</span>
+            </div>
+            <div class="selected-waves">
+                <i class="fas fa-water"></i>
+                <span id="selectedZoneWaves">1.5 m</span>
+            </div>
+        </div>
+        <button onclick="goToSelectedZone()" class="zone-action-btn">
+            <i class="fas fa-arrow-right"></i> Voir détails
+        </button>
+    </div>
+    
+    <!-- Échelle -->
+    <div class="map-scale">
+        <div class="scale-bar"></div>
+        <span>50 km</span>
+    </div>
+    
+</div>
+         <!-- Bottom Nav -->
         <div class="bottom-nav">
             <button class="nav-btn active" onclick="switchTab('weather')">
                 <i class="fas fa-cloud-sun"></i>
