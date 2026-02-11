@@ -1,54 +1,90 @@
-// Configuration
+// ============================================
+// MÉTÉO MARINE BRETAGNE - API STORMGLASS
+// ============================================
+
+// 1. CONFIGURATION
 const CONFIG = {
     apiKey: localStorage.getItem('stormglass_api_key') || '',
     units: localStorage.getItem('units') || 'metric',
     darkMode: localStorage.getItem('darkMode') === 'true',
     locations: {
-        nord: { name: 'Côte Nord Bretagne', lat: 48.7333, lng: -3.4667 },
-        sud: { name: 'Côte Sud Bretagne', lat: 47.4833, lng: -2.4833 },
-        morlaix: { name: 'Baie de Morlaix', lat: 48.6833, lng: -3.8333 },
-        brest: { name: 'Rade de Brest', lat: 48.3833, lng: -4.4833 },
-        quiberon: { name: 'Presqu\'île de Quiberon', lat: 47.4833, lng: -3.1167 },
-        finistere: { name: 'Pointe du Finistère', lat: 48.3833, lng: -4.7667 }
+        nord: { 
+            name: 'Côte Nord Bretagne', 
+            lat: 48.7333, 
+            lng: -3.4667,
+            desc: 'Perros-Guirec, Côtes-d\'Armor'
+        },
+        sud: { 
+            name: 'Côte Sud Bretagne', 
+            lat: 47.4833, 
+            lng: -2.4833,
+            desc: 'Golfe du Morbihan, Vannes'
+        },
+        morlaix: { 
+            name: 'Baie de Morlaix', 
+            lat: 48.6833, 
+            lng: -3.8333,
+            desc: 'Baie de Morlaix, Carantec'
+        },
+        brest: { 
+            name: 'Rade de Brest', 
+            lat: 48.3833, 
+            lng: -4.4833,
+            desc: 'Rade de Brest, Goulet'
+        },
+        quiberon: { 
+            name: 'Presqu\'île de Quiberon', 
+            lat: 47.4833, 
+            lng: -3.1167,
+            desc: 'Côte Sauvage, Quiberon'
+        },
+        finistere: { 
+            name: 'Pointe du Finistère', 
+            lat: 48.3833, 
+            lng: -4.7667,
+            desc: 'Mer d\'Iroise, Ouessant'
+        }
     }
 };
 
-// État
+// 2. ÉTAT DE L'APPLICATION
 let state = {
     currentLocation: 'nord',
     weatherData: null,
     forecastData: null,
     isOnline: navigator.onLine,
-    deferredPrompt: null
+    deferredPrompt: null,
+    lastUpdate: null
 };
 
-// Initialisation
-function init() {
-    // Mode sombre
+// 3. INITIALISATION
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initialisation de l\'application...');
+    
+    // Appliquer le mode sombre
     if (CONFIG.darkMode) document.body.classList.add('dark-mode');
     
-    // Événements
+    // Configurer les événements
     setupEvents();
     
-    // Charger données
-    loadWeatherData();
+    // Charger les données
+    checkApiKeyAndLoad();
     
-    // Vérifier connexion
-    updateConnectionStatus();
+    // Mettre à jour l'heure
+    updateTime();
+    setInterval(updateTime, 60000);
     
-    // Install PWA
+    // Configurer PWA
     setupPWA();
-    
-    console.log('Application initialisée');
-}
+});
 
-// Événements
+// 4. GESTION DES ÉVÉNEMENTS
 function setupEvents() {
-    // Réseau
+    // Connexion réseau
     window.addEventListener('online', () => {
         state.isOnline = true;
         updateConnectionStatus();
-        loadWeatherData();
+        checkApiKeyAndLoad();
     });
     
     window.addEventListener('offline', () => {
@@ -57,26 +93,32 @@ function setupEvents() {
         loadCachedData();
     });
     
-    // Rafraîchissement auto
-    setInterval(loadWeatherData, 10 * 60 * 1000);
+    // Rafraîchissement automatique (10 minutes)
+    setInterval(() => {
+        if (state.isOnline && CONFIG.apiKey) {
+            loadWeatherData();
+        }
+    }, 10 * 60 * 1000);
 }
 
-// PWA
-function setupPWA() {
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        state.deferredPrompt = e;
-        setTimeout(showInstallPrompt, 5000);
-    });
+// 5. VÉRIFICATION API
+function checkApiKeyAndLoad() {
+    const apiInfo = document.getElementById('apiInfo');
     
-    document.getElementById('installButton')?.addEventListener('click', installPWA);
-    document.getElementById('closeInstall')?.addEventListener('click', hideInstallPrompt);
+    if (!CONFIG.apiKey) {
+        if (apiInfo) apiInfo.style.display = 'flex';
+        showWarning('⚠️ Configuration requise', 'Veuillez configurer votre clé API Stormglass');
+        loadDemoData(); // Données de démonstration
+    } else {
+        if (apiInfo) apiInfo.style.display = 'none';
+        loadWeatherData();
+    }
 }
 
-// Données météo
+// 6. CHARGEMENT DES DONNÉES STORMGLASS
 async function loadWeatherData() {
     if (!CONFIG.apiKey) {
-        showApiWarning();
+        loadDemoData();
         return;
     }
     
@@ -85,35 +127,46 @@ async function loadWeatherData() {
         return;
     }
     
-    showLoading();
+    showLoading(true);
     
     try {
         const location = CONFIG.locations[state.currentLocation];
         
-        // Données actuelles
-        const weather = await fetchWeather(location.lat, location.lng);
+        // Appel simultané aux 2 endpoints
+        const [weather, forecast] = await Promise.all([
+            fetchCurrentWeather(location.lat, location.lng),
+            fetchForecast(location.lat, location.lng)
+        ]);
+        
         state.weatherData = weather;
-        
-        // Prévisions
-        const forecast = await fetchForecast(location.lat, location.lng);
         state.forecastData = forecast;
+        state.lastUpdate = new Date();
         
-        // Mettre à jour l'interface
-        updateUI();
+        // Mise à jour de l'interface
+        updateCurrentWeather();
+        updateForecast();
+        updateWarnings();
+        updateLastUpdateTime();
         
-        // Mettre en cache
+        // Sauvegarde en cache
         cacheData();
         
+        console.log('✅ Données mises à jour:', new Date().toLocaleTimeString());
+        
     } catch (error) {
-        console.error('Erreur:', error);
-        showError('Impossible de charger les données');
+        console.error('❌ Erreur API:', error);
+        showWarning('⚠️ Erreur de chargement', error.message);
         loadCachedData();
+    } finally {
+        showLoading(false);
     }
 }
 
-async function fetchWeather(lat, lng) {
+// 7. APPELS API STORMGLASS
+async function fetchCurrentWeather(lat, lng) {
     const params = new URLSearchParams({
-        lat, lng,
+        lat: lat,
+        lng: lng,
         params: 'airTemperature,waterTemperature,windSpeed,windDirection,waveHeight,pressure,visibility',
         source: 'sg'
     });
@@ -122,7 +175,12 @@ async function fetchWeather(lat, lng) {
         headers: { 'Authorization': CONFIG.apiKey }
     });
     
-    if (!response.ok) throw new Error(`API: ${response.status}`);
+    if (!response.ok) {
+        if (response.status === 401) throw new Error('Clé API invalide');
+        if (response.status === 429) throw new Error('Limite de requêtes dépassée');
+        throw new Error(`Erreur API (${response.status})`);
+    }
+    
     return await response.json();
 }
 
@@ -132,7 +190,8 @@ async function fetchForecast(lat, lng) {
     tomorrow.setDate(tomorrow.getDate() + 1);
     
     const params = new URLSearchParams({
-        lat, lng,
+        lat: lat,
+        lng: lng,
         params: 'airTemperature,windSpeed,waveHeight',
         start: now.toISOString(),
         end: tomorrow.toISOString(),
@@ -143,81 +202,94 @@ async function fetchForecast(lat, lng) {
         headers: { 'Authorization': CONFIG.apiKey }
     });
     
-    if (!response.ok) throw new Error(`API: ${response.status}`);
+    if (!response.ok) {
+        throw new Error(`Erreur prévisions (${response.status})`);
+    }
+    
     return await response.json();
 }
 
-// UI Updates
-function updateUI() {
-    updateCurrentWeather();
-    updateForecast();
-    updateWarnings();
-    updateLastUpdate();
-}
-
+// 8. MISE À JOUR DE L'INTERFACE
 function updateCurrentWeather() {
     if (!state.weatherData) return;
     
     const data = state.weatherData;
     const currentHour = new Date().getHours();
-    const currentData = data.hours?.find(h => 
+    
+    // Chercher les données de l'heure actuelle
+    let currentData = data.hours?.find(h => 
         new Date(h.time).getHours() === currentHour
     ) || data.hours?.[0] || {};
     
-    // Location
-    document.getElementById('locationName').textContent = 
-        CONFIG.locations[state.currentLocation].name;
+    // Nom de la localisation
+    const locationEl = document.getElementById('locationName');
+    if (locationEl) {
+        locationEl.textContent = CONFIG.locations[state.currentLocation].name;
+    }
     
-    // Température
+    // Température air
     const airTemp = currentData.airTemperature?.sg;
-    if (airTemp) {
-        document.getElementById('currentTemp').textContent = `${Math.round(airTemp)}°C`;
+    if (airTemp !== undefined) {
+        const tempEl = document.getElementById('currentTemp');
+        if (tempEl) tempEl.textContent = `${Math.round(airTemp)}°C`;
     }
     
-    // Mer
+    // Température mer
     const waterTemp = currentData.waterTemperature?.sg;
-    if (waterTemp) {
-        document.getElementById('seaTemp').textContent = `Mer: ${Math.round(waterTemp)}°C`;
+    if (waterTemp !== undefined) {
+        const seaEl = document.getElementById('seaTemp');
+        if (seaEl) seaEl.textContent = `Mer: ${Math.round(waterTemp)}°C`;
     }
     
-    // Conditions
+    // Conditions météo (basées sur le vent)
     const windSpeed = currentData.windSpeed?.sg || 0;
-    const conditions = getConditions(windSpeed);
-    document.getElementById('conditions').textContent = conditions.text;
-    document.getElementById('weatherIcon').innerHTML = `<i class="fas ${conditions.icon}"></i>`;
+    const conditions = getConditionsFromWind(windSpeed);
     
-    // Détails
-    if (windSpeed !== undefined) {
+    const conditionsEl = document.getElementById('conditions');
+    if (conditionsEl) conditionsEl.textContent = conditions.text;
+    
+    const iconEl = document.getElementById('weatherIcon');
+    if (iconEl) iconEl.innerHTML = `<i class="fas ${conditions.icon}"></i>`;
+    
+    // Vent
+    if (currentData.windSpeed?.sg !== undefined) {
+        const speed = Math.round(currentData.windSpeed.sg);
         const dir = currentData.windDirection?.sg;
         const dirText = dir ? ` ${getWindDirection(dir)}` : '';
-        document.getElementById('windValue').textContent = `${Math.round(windSpeed)} nœuds${dirText}`;
+        const windEl = document.getElementById('windValue');
+        if (windEl) windEl.textContent = `${speed} nœuds${dirText}`;
     }
     
-    const waveHeight = currentData.waveHeight?.sg;
-    if (waveHeight) {
-        document.getElementById('waveValue').textContent = `${waveHeight.toFixed(1)} m`;
+    // Vagues
+    if (currentData.waveHeight?.sg !== undefined) {
+        const waveEl = document.getElementById('waveValue');
+        if (waveEl) waveEl.textContent = `${currentData.waveHeight.sg.toFixed(1)} m`;
     }
     
-    const pressure = currentData.pressure?.sg;
-    if (pressure) {
-        document.getElementById('pressureValue').textContent = `${Math.round(pressure)} hPa`;
+    // Pression
+    if (currentData.pressure?.sg !== undefined) {
+        const pressureEl = document.getElementById('pressureValue');
+        if (pressureEl) pressureEl.textContent = `${Math.round(currentData.pressure.sg)} hPa`;
     }
     
-    const visibility = currentData.visibility?.sg;
-    if (visibility) {
-        document.getElementById('visibilityValue').textContent = `${visibility.toFixed(1)} km`;
+    // Visibilité
+    if (currentData.visibility?.sg !== undefined) {
+        const visEl = document.getElementById('visibilityValue');
+        if (visEl) visEl.textContent = `${currentData.visibility.sg.toFixed(1)} km`;
     }
 }
 
+// 9. PRÉVISIONS
 function updateForecast() {
     if (!state.forecastData) return;
     
     const container = document.getElementById('forecastContainer');
-    const hours = state.forecastData.hours || [];
+    if (!container) return;
     
+    const hours = state.forecastData.hours || [];
     container.innerHTML = '';
     
-    // 8 points (toutes les 3 heures)
+    // Afficher les 8 prochaines heures (toutes les 3h)
     for (let i = 0; i < Math.min(8, hours.length); i += 3) {
         const hourData = hours[i];
         if (!hourData) continue;
@@ -227,7 +299,7 @@ function updateForecast() {
         const temp = hourData.airTemperature?.sg;
         const wind = hourData.windSpeed?.sg || 0;
         const waves = hourData.waveHeight?.sg;
-        const conditions = getConditions(wind);
+        const conditions = getConditionsFromWind(wind);
         
         const card = document.createElement('div');
         card.className = 'forecast-card';
@@ -245,6 +317,7 @@ function updateForecast() {
     }
 }
 
+// 10. ALERTES MÉTÉO
 function updateWarnings() {
     if (!state.weatherData) return;
     
@@ -254,73 +327,70 @@ function updateWarnings() {
         new Date(h.time).getHours() === currentHour
     ) || data.hours?.[0] || {};
     
-    const wind = currentData.windSpeed?.sg || 0;
-    const waves = currentData.waveHeight?.sg || 0;
+    const windSpeed = currentData.windSpeed?.sg || 0;
+    const waveHeight = currentData.waveHeight?.sg || 0;
     
-    const warning = document.getElementById('warningCard');
-    const title = document.getElementById('warningTitle');
-    const text = document.getElementById('warningText');
+    const warningCard = document.getElementById('warningCard');
+    const warningTitle = document.getElementById('warningTitle');
+    const warningText = document.getElementById('warningText');
     
-    if (wind > 30 || waves > 4) {
-        warning.className = 'warning-card danger';
-        title.textContent = 'DANGER';
-        text.textContent = 'Conditions dangereuses. Navigation déconseillée.';
-    } else if (wind > 20 || waves > 2.5) {
-        warning.className = 'warning-card';
-        title.textContent = 'ATTENTION';
-        text.textContent = 'Mer agitée. Prudence recommandée.';
-    } else if (wind > 10 || waves > 1.5) {
-        warning.className = 'warning-card';
-        title.textContent = 'AVIS';
-        text.textContent = 'Conditions normales de navigation.';
+    if (!warningCard || !warningTitle || !warningText) return;
+    
+    // Seuils de danger
+    if (windSpeed > 30 || waveHeight > 4) {
+        warningCard.className = 'warning-card danger';
+        warningTitle.textContent = '🚨 DANGER';
+        warningText.textContent = 'Conditions extrêmes. Navigation interdite.';
+    } else if (windSpeed > 20 || waveHeight > 2.5) {
+        warningCard.className = 'warning-card';
+        warningTitle.textContent = '⚠️ ATTENTION';
+        warningText.textContent = 'Mer agitée. Prudence recommandée.';
+    } else if (windSpeed > 10 || waveHeight > 1.5) {
+        warningCard.className = 'warning-card';
+        warningTitle.textContent = 'ℹ️ AVIS';
+        warningText.textContent = 'Vent modéré. Navigation normale.';
     } else {
-        warning.className = 'warning-card safe';
-        title.textContent = 'FAVORABLE';
-        text.textContent = 'Excellentes conditions.';
+        warningCard.className = 'warning-card safe';
+        warningTitle.textContent = '✅ FAVORABLE';
+        warningText.textContent = 'Excellentes conditions.';
     }
 }
 
-// Utilitaires
-function getConditions(windSpeed) {
-    if (windSpeed < 3) return { text: 'Calme', icon: 'fa-sun' };
-    if (windSpeed < 10) return { text: 'Léger vent', icon: 'fa-cloud-sun' };
-    if (windSpeed < 20) return { text: 'Vent modéré', icon: 'fa-cloud' };
-    if (windSpeed < 30) return { text: 'Vent fort', icon: 'fa-wind' };
-    return { text: 'Tempête', icon: 'fa-poo-storm' };
-}
-
-function getWindDirection(degrees) {
-    const directions = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
-    return directions[Math.round((degrees % 360) / 22.5) % 16];
-}
-
-function updateConnectionStatus() {
-    const status = document.getElementById('connectionStatus');
-    const offline = document.getElementById('offlineIndicator');
+// 11. DONNÉES DE DÉMONSTRATION (SANS API)
+function loadDemoData() {
+    // Simule des données météo réalistes pour la Bretagne
+    const demoSites = {
+        nord: { temp: 16, mer: 15, vent: 14, vagues: 1.8, pression: 1015, visibilite: 12 },
+        sud: { temp: 19, mer: 17, vent: 8, vagues: 0.8, pression: 1020, visibilite: 20 },
+        morlaix: { temp: 15, mer: 14, vent: 22, vagues: 2.5, pression: 1010, visibilite: 8 },
+        brest: { temp: 17, mer: 16, vent: 16, vagues: 1.5, pression: 1013, visibilite: 15 },
+        quiberon: { temp: 20, mer: 18, vent: 10, vagues: 1.0, pression: 1018, visibilite: 18 },
+        finistere: { temp: 14, mer: 13, vent: 28, vagues: 3.5, pression: 1008, visibilite: 6 }
+    };
     
-    if (state.isOnline) {
-        status.innerHTML = '<i class="fas fa-circle"></i> En ligne';
-        status.className = 'status online';
-        offline?.classList.remove('show');
-    } else {
-        status.innerHTML = '<i class="fas fa-circle"></i> Hors ligne';
-        status.className = 'status offline';
-        offline?.classList.add('show');
-    }
+    const data = demoSites[state.currentLocation] || demoSites.nord;
+    
+    // Mise à jour interface
+    document.getElementById('locationName').textContent = CONFIG.locations[state.currentLocation].name;
+    document.getElementById('currentTemp').textContent = `${data.temp}°C`;
+    document.getElementById('seaTemp').textContent = `Mer: ${data.mer}°C`;
+    document.getElementById('windValue').textContent = `${data.vent} nœuds`;
+    document.getElementById('waveValue').textContent = `${data.vagues} m`;
+    document.getElementById('pressureValue').textContent = `${data.pression} hPa`;
+    document.getElementById('visibilityValue').textContent = `${data.visibilite} km`;
+    
+    // Conditions
+    const conditions = getConditionsFromWind(data.vent);
+    document.getElementById('conditions').textContent = conditions.text;
+    document.getElementById('weatherIcon').innerHTML = `<i class="fas ${conditions.icon}"></i>`;
+    
+    // Avertissement
+    updateWarnings();
+    
+    showWarning('🎭 Mode démonstration', 'Configurez votre clé API pour les données réelles');
 }
 
-function updateLastUpdate() {
-    const element = document.getElementById('lastUpdate');
-    if (element) {
-        const time = new Date().toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        element.textContent = `Mis à jour: ${time}`;
-    }
-}
-
-// Cache
+// 12. GESTION DU CACHE
 function cacheData() {
     const cache = {
         weather: state.weatherData,
@@ -333,133 +403,241 @@ function cacheData() {
 
 function loadCachedData() {
     const cached = localStorage.getItem('weather_cache');
-    if (cached) {
-        try {
-            const data = JSON.parse(cached);
-            if (Date.now() - data.timestamp < 30 * 60 * 1000) {
-                state.weatherData = data.weather;
-                state.forecastData = data.forecast;
-                updateUI();
-                showWarning('Mode hors ligne', 'Données en cache');
-            }
-        } catch (e) {
-            console.error('Cache error:', e);
+    if (!cached) {
+        loadDemoData();
+        return;
+    }
+    
+    try {
+        const data = JSON.parse(cached);
+        const age = Date.now() - data.timestamp;
+        
+        // Cache valide 30 minutes
+        if (age < 30 * 60 * 1000) {
+            state.weatherData = data.weather;
+            state.forecastData = data.forecast;
+            state.currentLocation = data.location;
+            
+            updateCurrentWeather();
+            updateForecast();
+            updateWarnings();
+            
+            showWarning('📱 Mode hors ligne', 'Données du ' + new Date(data.timestamp).toLocaleTimeString());
+        } else {
+            loadDemoData();
+        }
+    } catch (e) {
+        loadDemoData();
+    }
+}
+
+// 13. FONCTIONS UTILITAIRES
+function getConditionsFromWind(windSpeed) {
+    if (windSpeed < 3) return { text: 'Calme plat', icon: 'fa-sun' };
+    if (windSpeed < 8) return { text: 'Léger vent', icon: 'fa-cloud-sun' };
+    if (windSpeed < 15) return { text: 'Petite brise', icon: 'fa-cloud' };
+    if (windSpeed < 22) return { text: 'Jolie brise', icon: 'fa-wind' };
+    if (windSpeed < 30) return { text: 'Vent frais', icon: 'fa-wind' };
+    return { text: 'Coup de vent', icon: 'fa-poo-storm' };
+}
+
+function getWindDirection(degrees) {
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                       'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'];
+    return directions[Math.round((degrees % 360) / 22.5) % 16];
+}
+
+function updateConnectionStatus() {
+    const statusEl = document.getElementById('connectionStatus');
+    const offlineEl = document.getElementById('offlineIndicator');
+    
+    if (statusEl) {
+        if (state.isOnline) {
+            statusEl.innerHTML = '<i class="fas fa-circle"></i> En ligne';
+            statusEl.className = 'status online';
+        } else {
+            statusEl.innerHTML = '<i class="fas fa-circle"></i> Hors ligne';
+            statusEl.className = 'status offline';
+        }
+    }
+    
+    if (offlineEl) {
+        if (state.isOnline) {
+            offlineEl.classList.remove('show');
+        } else {
+            offlineEl.classList.add('show');
         }
     }
 }
 
-// Interface
-function showInstallPrompt() {
-    const prompt = document.getElementById('installPrompt');
-    if (prompt && state.deferredPrompt) {
-        prompt.classList.add('show');
+function updateTime() {
+    const el = document.getElementById('lastUpdate');
+    if (el) {
+        const now = new Date();
+        const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        el.textContent = `Mis à jour: ${time}`;
     }
 }
 
-function hideInstallPrompt() {
-    const prompt = document.getElementById('installPrompt');
-    if (prompt) prompt.classList.remove('show');
+function updateLastUpdateTime() {
+    const el = document.getElementById('lastUpdate');
+    if (el && state.lastUpdate) {
+        const time = state.lastUpdate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        el.textContent = `Mis à jour: ${time}`;
+    }
 }
 
-async function installPWA() {
+function showLoading(show) {
+    const icon = document.getElementById('weatherIcon');
+    if (icon) {
+        if (show) {
+            icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+    }
+}
+
+function showWarning(title, message) {
+    const warningTitle = document.getElementById('warningTitle');
+    const warningText = document.getElementById('warningText');
+    if (warningTitle && warningText) {
+        warningTitle.textContent = title;
+        warningText.textContent = message;
+    }
+}
+
+// 14. CONFIGURATION API
+window.saveApiKey = function() {
+    const input = document.getElementById('apiKeyInput');
+    if (input && input.value.trim()) {
+        CONFIG.apiKey = input.value.trim();
+        localStorage.setItem('stormglass_api_key', input.value.trim());
+        alert('✅ Clé API sauvegardée !');
+        checkApiKeyAndLoad();
+        closeModal();
+    } else {
+        alert('❌ Veuillez entrer une clé API');
+    }
+};
+
+// 15. SÉLECTION DE LOCALISATION
+window.selectLocation = function(locationId) {
+    if (CONFIG.locations[locationId]) {
+        state.currentLocation = locationId;
+        
+        // Mise à jour menu
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        const activeItem = document.querySelector(`[data-location="${locationId}"]`);
+        if (activeItem) activeItem.classList.add('active');
+        
+        // Recharger données
+        checkApiKeyAndLoad();
+    }
+};
+
+// 16. RAFRAÎCHISSEMENT MANUEL
+window.refreshData = function() {
+    const btn = document.querySelector('.icon-btn[title="Actualiser"]');
+    if (btn) {
+        btn.classList.add('refreshing');
+        setTimeout(() => btn.classList.remove('refreshing'), 1000);
+    }
+    checkApiKeyAndLoad();
+};
+
+// 17. PWA INSTALLATION
+function setupPWA() {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        state.deferredPrompt = e;
+        
+        // Afficher le bouton d'installation après 3 secondes
+        setTimeout(() => {
+            if (state.deferredPrompt) {
+                const installBtn = document.getElementById('installButton');
+                if (installBtn) installBtn.classList.add('show');
+            }
+        }, 3000);
+    });
+    
+    window.addEventListener('appinstalled', () => {
+        state.deferredPrompt = null;
+        const installBtn = document.getElementById('installButton');
+        if (installBtn) installBtn.classList.remove('show');
+        console.log('✅ PWA installée avec succès');
+    });
+}
+
+window.installPWA = async function() {
     if (!state.deferredPrompt) return;
     
     state.deferredPrompt.prompt();
     const { outcome } = await state.deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
-        console.log('PWA installée');
-        hideInstallPrompt();
+        console.log('✅ Installation acceptée');
+        document.getElementById('installButton')?.classList.remove('show');
     }
     
     state.deferredPrompt = null;
-}
+};
 
-function toggleMenu() {
-    const menu = document.getElementById('sideMenu');
-    menu.classList.toggle('open');
-}
+// 18. UTILITAIRES INTERFACE
+window.toggleMenu = function() {
+    document.getElementById('sideMenu')?.classList.toggle('open');
+};
 
-function selectLocation(location) {
-    if (CONFIG.locations[location]) {
-        state.currentLocation = location;
-        
-        // Mettre à jour le menu
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        event.target.classList.add('active');
-        
-        loadWeatherData();
+window.openSettings = function() {
+    document.getElementById('settingsModal')?.classList.add('show');
+    
+    // Pré-remplir la clé API
+    const input = document.getElementById('apiKeyInput');
+    if (input && CONFIG.apiKey) {
+        input.value = CONFIG.apiKey;
     }
-}
+};
 
-function refreshData() {
-    const btn = event.target.closest('button');
-    if (btn) {
-        btn.classList.add('refreshing');
-        setTimeout(() => btn.classList.remove('refreshing'), 1000);
+window.showAbout = function() {
+    document.getElementById('aboutModal')?.classList.add('show');
+    
+    // Date de version
+    const versionEl = document.getElementById('versionDate');
+    if (versionEl) {
+        const today = new Date();
+        versionEl.textContent = today.toLocaleDateString('fr-FR');
     }
-    loadWeatherData();
-}
+};
 
-function openSettings() {
-    document.getElementById('settingsModal').classList.add('show');
-}
-
-function showAbout() {
-    document.getElementById('aboutModal').classList.add('show');
-}
-
-function closeModal() {
+window.closeModal = function() {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.classList.remove('show');
     });
-}
+};
 
-function saveApiKey() {
-    const input = document.getElementById('apiKeyInput');
-    if (input && input.value) {
-        CONFIG.apiKey = input.value;
-        localStorage.setItem('stormglass_api_key', input.value);
-        alert('Clé API sauvegardée !');
-        loadWeatherData();
-    }
-}
-
-function clearCache() {
+window.clearCache = function() {
     localStorage.removeItem('weather_cache');
-    alert('Cache vidé !');
-}
+    alert('🧹 Cache vidé !');
+};
 
-function showApiWarning() {
-    document.getElementById('apiInfo').style.display = 'block';
-    showWarning('Configuration requise', 'Veuillez configurer votre clé API');
-}
-
-function showWarning(title, text) {
-    const card = document.getElementById('warningCard');
-    const titleEl = document.getElementById('warningTitle');
-    const textEl = document.getElementById('warningText');
+// 19. EXPORTATION DES DONNÉES (optionnel)
+window.exportData = function() {
+    const data = {
+        app: 'Météo Marine Bretagne',
+        version: '1.0.0',
+        date: new Date().toISOString(),
+        location: CONFIG.locations[state.currentLocation],
+        weather: state.weatherData,
+        forecast: state.forecastData
+    };
     
-    if (card && titleEl && textEl) {
-        card.className = 'warning-card';
-        titleEl.textContent = title;
-        textEl.textContent = text;
-    }
-}
-
-function showError(message) {
-    showWarning('Erreur', message);
-}
-
-function showLoading() {
-    // Animation de chargement
-    const icon = document.getElementById('weatherIcon');
-    if (icon) {
-        icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    }
-}
-
-// Démarrer l'application
-document.addEventListener('DOMContentLoaded', init);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meteo-marine-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
