@@ -677,3 +677,126 @@ if (isAndroid) {
         }
     });
 }
+// ============================================
+// FONCTIONS POUR LA CARTE INTERACTIVE
+// ============================================
+
+// Sélection d'une zone depuis la carte
+window.selectLocationFromMap = function(locationId) {
+    console.log('🗺️ Carte: sélection de', locationId);
+    
+    // Mettre à jour la localisation courante
+    if (CONFIG.locations[locationId]) {
+        state.currentLocation = locationId;
+        
+        // Mettre à jour l'UI
+        document.getElementById('locationName').textContent = CONFIG.locations[locationId].name;
+        
+        // Recharger les données
+        checkApiKeyAndLoad();
+        
+        // Mettre à jour la carte
+        updateMapSelection(locationId);
+        updateSelectedZoneCard(locationId);
+    }
+};
+
+// Mise à jour visuelle de la sélection sur la carte
+function updateMapSelection(locationId) {
+    // Enlever la classe active de toutes les zones
+    document.querySelectorAll('.marine-zone').forEach(zone => {
+        zone.classList.remove('active');
+    });
+    
+    // Ajouter la classe active à la zone sélectionnée
+    const selectedZone = document.querySelector(`.marine-zone[data-location="${locationId}"]`);
+    if (selectedZone) {
+        selectedZone.classList.add('active');
+    }
+}
+
+// Mise à jour de la carte avec les données météo
+window.updateMapWithWeatherData = function() {
+    if (!state.weatherData) return;
+    
+    const locations = ['nord', 'sud', 'morlaix', 'brest', 'quiberon', 'finistere'];
+    
+    locations.forEach(loc => {
+        const tempElement = document.getElementById(`mapTemp${loc.charAt(0).toUpperCase() + loc.slice(1)}`);
+        if (tempElement) {
+            // Simulation de température pour chaque zone
+            // À remplacer par les vraies données API
+            const temps = {
+                nord: '16°C',
+                sud: '19°C',
+                morlaix: '15°C',
+                brest: '17°C',
+                quiberon: '20°C',
+                finistere: '14°C'
+            };
+            tempElement.textContent = temps[loc] || '--°C';
+        }
+    });
+};
+
+// Mise à jour de la carte de sélection
+function updateSelectedZoneCard(locationId) {
+    const location = CONFIG.locations[locationId];
+    if (!location) return;
+    
+    document.getElementById('selectedZoneName').textContent = location.name;
+    
+    // Mettre à jour avec les données actuelles
+    if (state.weatherData) {
+        const currentHour = new Date().getHours();
+        const currentData = state.weatherData.hours?.find(h => 
+            new Date(h.time).getHours() === currentHour
+        ) || state.weatherData.hours?.[0] || {};
+        
+        const airTemp = currentData.airTemperature?.sg;
+        const waterTemp = currentData.waterTemperature?.sg;
+        const windSpeed = currentData.windSpeed?.sg;
+        const waveHeight = currentData.waveHeight?.sg;
+        
+        document.getElementById('selectedZoneTemp').textContent = 
+            airTemp ? `${Math.round(airTemp)}°C` : '--°C';
+        document.getElementById('selectedZoneSea').textContent = 
+            waterTemp ? `${Math.round(waterTemp)}°C` : '--°C';
+        document.getElementById('selectedZoneWind').textContent = 
+            windSpeed ? `${Math.round(windSpeed)} nd` : '-- nd';
+        document.getElementById('selectedZoneWaves').textContent = 
+            waveHeight ? `${waveHeight.toFixed(1)} m` : '-- m';
+    }
+    
+    // Mettre à jour l'heure
+    document.getElementById('mapUpdateTime').textContent = 
+        `Mise à jour: ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+// Aller aux détails de la zone sélectionnée
+window.goToSelectedZone = function() {
+    // Faire défiler jusqu'aux détails météo
+    document.querySelector('.weather-card').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+};
+
+// Initialisation de la carte
+window.initMap = function() {
+    console.log('🗺️ Initialisation de la carte');
+    
+    // Sélectionner la première zone par défaut
+    setTimeout(() => {
+        updateMapSelection(state.currentLocation || 'nord');
+        updateSelectedZoneCard(state.currentLocation || 'nord');
+        updateMapWithWeatherData();
+    }, 1000);
+};
+
+// Appeler l'initialisation au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    // ... votre code existant ...
+    
+    // Ajouter cette ligne à la fin
+    setTimeout(initMap, 500);
+});
