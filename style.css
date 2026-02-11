@@ -755,3 +755,299 @@ body {
         font-size: 0.7rem;
     }
 }
+/* ============================================ */
+/* CARTE INTERACTIVE - GRAND FORMAT LISIBLE    */
+/* ============================================ */
+
+.map-full-container {
+    background: white;
+    border-radius: 24px;
+    padding: 25px;
+    margin: 20px 0 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    position: relative;
+    border: 1px solid rgba(38,208,206,0.2);
+}
+
+/* Carte SVG */
+.map-svg-container {
+    width: 100%;
+    height: auto;
+    min-height: 450px;
+    background: linear-gradient(145deg, #e6f3ff, #d4e9ff);
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.bretagne-map {
+    width: 100%;
+    height: auto;
+    max-height: 550px;
+}
+
+/* Zones interactives */
+.marine-zone {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.zone-hover {
+    transition: all 0.3s ease;
+}
+
+.marine-zone:hover .zone-hover {
+    opacity: 0.9 !important;
+    stroke: white;
+    stroke-width: 2;
+    transform: scale(1.05);
+}
+
+.marine-zone.active .zone-hover {
+    stroke: #26d0ce;
+    stroke-width: 3;
+    opacity: 0.9 !important;
+}
+
+.zone-label {
+    font-size: 14px;
+    font-weight: bold;
+    fill: #1a2980;
+    stroke: white;
+    stroke-width: 0.5;
+    paint-order: stroke;
+}
+
+.zone-temp {
+    font-size: 12px;
+    fill: #333;
+    font-weight: 600;
+}
+
+.city-label {
+    font-size: 11px;
+    fill: #333;
+    font-weight: 500;
+    background: white;
+}
+
+/* Légende */
+.map-legend-card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-left: 5px solid #26d0ce;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.map-legend-card h4 {
+    grid-column: 1 / -1;
+    margin-bottom: 10px;
+    color: #1a2980;
+    font-size: 1.2rem;
+}
+
+.legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.tide-info {
+    text-align: right;
+    color: #666;
+    font-size: 13px;
+}
+
+/* Carte zone sélectionnée */
+.selected-zone-card {
+    background: linear-gradient(135deg, #1a2980, #26d0ce);
+    color: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: center;
+    gap: 15px;
+}
+
+.selected-zone-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.selected-zone-header i {
+    font-size: 24px;
+}
+
+.selected-zone-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.selected-zone-weather {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.selected-temp, .selected-sea {
+    text-align: center;
+}
+
+.selected-temp span, .selected-sea span {
+    font-size: 24px;
+    font-weight: bold;
+    display: block;
+}
+
+.selected-temp small, .selected-sea small {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+.selected-wind, .selected-waves {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.zone-action-btn {
+    background: white;
+    color: #1a2980;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.zone-action-btn:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Échelle */
+.map-scale {
+    position: absolute;
+    bottom: 35px;
+    right: 35px;
+    background: rgba(255,255,255,0.9);
+    padding: 8px 15px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.scale-bar {
+    width: 50px;
+    height: 4px;
+    background: #1a2980;
+    border-radius: 2px;
+}
+
+/* Responsive tablette */
+@media (max-width: 768px) {
+    .map-full-container {
+        padding: 15px;
+    }
+    
+    .map-svg-container {
+        min-height: 350px;
+    }
+    
+    .zone-label {
+        font-size: 11px;
+    }
+    
+    .zone-temp {
+        font-size: 10px;
+    }
+    
+    .selected-zone-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .selected-zone-header {
+        justify-content: center;
+    }
+    
+    .map-legend-card {
+        grid-template-columns: 1fr;
+    }
+    
+    .tide-info {
+        text-align: left;
+    }
+    
+    .map-scale {
+        position: static;
+        margin-top: 15px;
+        justify-content: flex-end;
+    }
+}
+
+/* Mode sombre */
+.dark-mode .map-full-container {
+    background: #2d2d44;
+    border-color: #26d0ce;
+}
+
+.dark-mode .map-svg-container {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+}
+
+.dark-mode .zone-label {
+    fill: #fff;
+    stroke: #333;
+}
+
+.dark-mode .city-label {
+    fill: #ddd;
+}
+
+.dark-mode .map-legend-card {
+    background: #2d2d44;
+    color: white;
+}
+
+.dark-mode .map-legend-card h4 {
+    color: #26d0ce;
+}
+
+.dark-mode .tide-info {
+    color: #ddd;
+}
+
+.dark-mode .map-scale {
+    background: #2d2d44;
+    color: white;
+}
