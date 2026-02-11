@@ -641,3 +641,39 @@ window.exportData = function() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 };
+// ============================================
+// CODE SPÉCIAL ANDROID - À AJOUTER
+// ============================================
+
+// Détection Android
+const isAndroid = /Android/i.test(navigator.userAgent);
+
+if (isAndroid) {
+    console.log('📱 Appareil Android détecté');
+    
+    // Forcer l'affichage du bouton d'installation
+    window.addEventListener('load', function() {
+        // Afficher le bouton directement (sans attendre beforeinstallprompt)
+        const installBtn = document.getElementById('installMenuButton');
+        const installFloatBtn = document.getElementById('installButton');
+        
+        if (installBtn) {
+            installBtn.style.display = 'flex';
+            installBtn.classList.add('show');
+            
+            // Remplacer la fonction d'installation
+            installBtn.onclick = function() {
+                // Sur Android, on utilise le menu Chrome
+                alert('📲 Pour installer :\n\n1. Appuyez sur ⋮\n2. "Ajouter à l\'écran d\'accueil"\n3. "Installer"');
+                
+                // Ouvrir le menu Chrome
+                // (pas possible programmatiquement, donc on guide l'utilisateur)
+            };
+        }
+        
+        if (installFloatBtn) {
+            installFloatBtn.style.display = 'flex';
+            installFloatBtn.classList.add('show');
+        }
+    });
+}
