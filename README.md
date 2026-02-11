@@ -3,8 +3,7 @@
 Application PWA de météo marine pour la navigation en Bretagne.
 
 ## 🚀 Démo en ligne
-[https://votre-utilisateur.github.io/meteo-marine-bretagne/](https://votre-utilisateur.github.io/meteo-marine-bretagne/)
-
+[https://david44-meteo.github.io/meteo-marine-bretagne/](https://david44-meteo.github.io/meteo-marine-bretagne/)
 ## ✨ Fonctionnalités
 - ✅ Données météo marines temps réel
 - ✅ 6 zones côtières de Bretagne
