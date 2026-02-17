@@ -1,7 +1,12 @@
 // ============================================
 // MÉTÉO MARINE BRETAGNE - VERSION STABLE
 // ============================================
-
+// ===== TEST VISIBLE =====
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.style.backgroundColor = 'red';
+    alert('JavaScript chargé !');
+    console.log('JavaScript OK');
+});
 // 1. CONFIGURATION (DOIT ÊTRE EN PREMIER)
 const CONFIG = {
     apiKey: localStorage.getItem('stormglass_api_key') || '',
