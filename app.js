@@ -1,13 +1,10 @@
 // ============================================
-// MÉTÉO MARINE BRETAGNE - VERSION STABLE
+// MÉTÉO MARINE - VERSION FINALE CORRIGÉE
 // ============================================
-// ===== TEST VISIBLE =====
-document.addEventListener('DOMContentLoaded', function() {
-    document.body.style.backgroundColor = 'red';
-    alert('JavaScript chargé !');
-    console.log('JavaScript OK');
-});
-// 1. CONFIGURATION (DOIT ÊTRE EN PREMIER)
+
+console.log("🔥 app.js chargé - Démarrage...");
+
+// ===== CONFIGURATION =====
 const CONFIG = {
     apiKey: localStorage.getItem('stormglass_api_key') || '',
     units: localStorage.getItem('units') || 'metric',
@@ -22,7 +19,7 @@ const CONFIG = {
     }
 };
 
-// 2. ÉTAT DE L'APPLICATION
+// ===== ÉTAT =====
 let state = {
     currentLocation: 'nord',
     weatherData: null,
@@ -32,11 +29,13 @@ let state = {
     lastUpdate: null
 };
 
-// ============================================
-// 3. INITIALISATION - SIMPLIFIÉE
-// ============================================
+// ===== UN SEUL ÉCOUTEUR PRINCIPAL =====
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initialisation...');
+    console.log('✅ DOM prêt - Initialisation complète...');
+    
+    // TEST VISIBLE (fond rouge)
+    document.body.style.backgroundColor = 'red';
+    console.log('✅ Test visuel : fond rouge');
     
     // Mode sombre
     if (CONFIG.darkMode) document.body.classList.add('dark-mode');
@@ -44,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // AFFICHER LES PRÉVISIONS IMMÉDIATEMENT
     afficherPrevisionsDemo();
     
-    // Charger les données
+    // Charger les données météo
     if (!CONFIG.apiKey) {
         afficherModeDemo();
     } else {
@@ -55,12 +54,10 @@ document.addEventListener('DOMContentLoaded', function() {
     mettreAJourHeure();
     setInterval(mettreAJourHeure, 60000);
     
-    console.log('✅ Initialisé');
+    console.log('✅ Initialisation terminée');
 });
 
-// ============================================
-// 4. PRÉVISIONS - AFFICHAGE INSTANTANÉ
-// ============================================
+// ===== PRÉVISIONS =====
 function afficherPrevisionsDemo() {
     console.log('📊 Affichage des prévisions');
     const container = document.getElementById('forecastContainer');
@@ -98,9 +95,7 @@ function afficherPrevisionsDemo() {
     });
 }
 
-// ============================================
-// 5. MODE DÉMO
-// ============================================
+// ===== MODE DÉMO =====
 function afficherModeDemo() {
     console.log('🎭 Mode démo');
     
@@ -128,13 +123,10 @@ function afficherModeDemo() {
     document.getElementById('warningTitle').textContent = '🎭 Mode démonstration';
     document.getElementById('warningText').textContent = 'Configurez votre clé API Stormglass pour les données réelles';
     
-    // Carte
     mettreAJourCarte(state.currentLocation, data);
 }
 
-// ============================================
-// 6. API STORMGLASS
-// ============================================
+// ===== API STORMGLASS =====
 async function chargerDonneesMeteo() {
     if (!CONFIG.apiKey) {
         afficherModeDemo();
@@ -174,9 +166,7 @@ async function chargerDonneesMeteo() {
     }
 }
 
-// ============================================
-// 7. FONCTIONS UTILITAIRES
-// ============================================
+// ===== UTILITAIRES =====
 function mettreAJourHeure() {
     const el = document.getElementById('lastUpdate');
     if (el) {
@@ -194,9 +184,7 @@ function mettreAJourCarte(location, data) {
     document.getElementById('selectedZoneWaves').textContent = `${data?.vagues || 1.8} m`;
 }
 
-// ============================================
-// 8. FONCTIONS GLOBALES (POUR LES BOUTONS)
-// ============================================
+// ===== FONCTIONS GLOBALES =====
 window.selectLocation = function(locationId) {
     if (CONFIG.locations[locationId]) {
         state.currentLocation = locationId;
@@ -258,9 +246,7 @@ window.goToSelectedZone = function() {
     document.querySelector('.weather-card')?.scrollIntoView({ behavior: 'smooth' });
 };
 
-// ============================================
-// 9. PWA INSTALLATION
-// ============================================
+// ===== PWA =====
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -286,7 +272,4 @@ window.installFromMenu = async function() {
 
 window.installPWA = window.installFromMenu;
 
-// ============================================
-// 10. DÉMARRAGE
-// ============================================
-console.log('✅ Script chargé avec succès');
+console.log('✅ Script chargé - En attente du DOM...');
